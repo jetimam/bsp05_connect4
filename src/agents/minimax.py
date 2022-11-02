@@ -3,7 +3,6 @@ import sys
 def minimax(node, depth, isMaxP, alpha, beta):
 	if len(node.get_children()) == 0:
 		return heuristic(node)
-	
 	if isMaxP:
 		best = sys.maxint
 		for child in node.get_children():
@@ -13,7 +12,6 @@ def minimax(node, depth, isMaxP, alpha, beta):
 			if alpha > beta:
 				break
 		return best
-
 	else:
 		best = -sys.maxint - 1
 		for child in node.get_children():
@@ -24,5 +22,10 @@ def minimax(node, depth, isMaxP, alpha, beta):
 				break
 		return best
 
-def heuristic():
+def get_children():
+	'''
+	
+	'''
+
+def heuristic(node):
 	pass
