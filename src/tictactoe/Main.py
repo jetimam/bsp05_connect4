@@ -53,7 +53,6 @@ def qlearning():
 	else:
 		actions[p_id] = p1.get_best_action(obs, new_state_p[p_id])
 	env.step(actions[p_id])
-	return done[(p_id+1) % 2]
 
 def randomized():
 	obs, _, done[p_id], _, _ = env.last()
@@ -62,21 +61,18 @@ def randomized():
 	else:
 		actions[p_id] = p2.get_random_action(obs)
 	env.step(actions[p_id])
-	return done[(p_id+1) % 2]
 
 def minimaxed():
 	obs, _, done[p_id], _, _ = env.last()
 	mini_state_p = merge_states(env.observe('player_1')['observation'])
 	actions[p_id] = minimax(obs, static_qtable, p_id, mini_state_p, 0, True, sys.maxint, -sys.maxint - 1)
 	env.step(actions[p_id])
-	return done[(p_id+1) % 2]
 
 def interactive():
 	env.render()
 	print('Make an action: Top left is 0, bottom right is 8.')
 	actions[p_id] = int(input())
 	env.step(actions[p_id])
-	return done[(p_id+1) % 2]
 
 for episode in range(max_episodes):
 	print('episode', episode)
@@ -90,11 +86,13 @@ for episode in range(max_episodes):
 	round = 0
 	for agent in env.agent_iter(max_steps):
 		if agent == 'player_1':
-			if qlearning():
-				break
+			qlearning()
+		if done[1]:
+			break
 		if agent == 'player_2':
-			if interactive():
-				break
+			randomized()
+		if done[0]:
+			break
 		p_id = (p_id + 1) % 2
 	
 	p1.decay_epsilon(min_epsilon)
