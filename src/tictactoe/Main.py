@@ -1,9 +1,28 @@
 import json
+import ast
 import sys
 import numpy as np
 from pettingzoo.classic import tictactoe_v3
 from TicTacToeAgent import TicTacToeAgent
 from Minimax import minimax
+
+def load(type):
+	data_o = {}
+	with open('table'+type+'.json', 'r') as fp:
+		data = json.load(fp)
+		for key, value in data.items():
+			key = ast.literal_eval(key)
+			value = np.array(value)
+			data_o[key] = value
+	return data_o
+
+def dump(table, type):
+	json_table = {}
+	for key, value in table.items():
+		json_table[str(key)] = value.tolist()
+		
+	with open('table'+type+'.json', 'w') as fp:
+		json.dump(json_table, fp, indent=4)
 
 def merge_states(obs):
 	state_p = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
@@ -29,7 +48,9 @@ rewards_global_1 = []
 env = tictactoe_v3.env()
 env.reset()
 np.random.seed(57)
-
+static_qtable1 = load('1') #pid '1', '2', or 'merged'
+static_qtable2 = load('2')
+static_qtablemerged = load('merged')
 # minimax get_children() for tictactoe using s` DONE
 # report DONE
 # merge the tables (player2)
@@ -38,20 +59,30 @@ np.random.seed(57)
 # ===================
 # bootstrap
 
-p1 = TicTacToeAgent(learning_rate, epsilon, epsilon_decay_rate)
-p2 = TicTacToeAgent(learning_rate, epsilon, epsilon_decay_rate)
+p = [TicTacToeAgent(static_qtable1, learning_rate, epsilon, epsilon_decay_rate), TicTacToeAgent(static_qtable2, learning_rate, epsilon, epsilon_decay_rate)]
+
 p_id = 0
 
 def qlearning():
 	obs, reward[p_id], done[p_id], _, _ = env.last()
 	episode_reward[p_id] += reward[p_id]
 	new_state_p[p_id] = merge_states(env.observe('player_1')['observation'])
-	p1.update(state_p[p_id], new_state_p[p_id], actions[p_id], reward[p_id], gamma)
+	p[p_id].update(state_p[p_id], new_state_p[p_id], actions[p_id], reward[p_id], gamma)
 	state_p[p_id] = new_state_p[p_id]
 	if done[p_id]:
 		actions[p_id] = None
 	else:
-		actions[p_id] = p1.get_best_action(obs, new_state_p[p_id])
+		actions[p_id] = p[p_id].get_epsilon_action(obs, new_state_p[p_id])
+	env.step(actions[p_id])
+
+def play():
+	obs, _, done[p_id], _, _ = env.last()
+	new_state_p[p_id] = merge_states(env.observe('player_1')['observation'])
+	state_p[p_id] = new_state_p[p_id]
+	if done[p_id]:
+		actions[p_id] = None
+	else:
+		actions[p_id] = p[p_id].get_best_action(obs, new_state_p[p_id])
 	env.step(actions[p_id])
 
 def randomized():
@@ -59,20 +90,23 @@ def randomized():
 	if done[p_id]:
 		actions[p_id] = None
 	else:
-		actions[p_id] = p2.get_random_action(obs)
+		actions[p_id] = p[p_id].get_random_action(obs)
 	env.step(actions[p_id])
 
 def minimaxed():
 	obs, _, done[p_id], _, _ = env.last()
 	mini_state_p = merge_states(env.observe('player_1')['observation'])
-	actions[p_id] = minimax(obs, static_qtable, p_id, mini_state_p, 0, True, sys.maxint, -sys.maxint - 1)
+	actions[p_id] = minimax(obs, p[p_id].qtable, p_id, mini_state_p, 0, True, sys.maxsize, -sys.maxsize - 1)
 	env.step(actions[p_id])
 
 def interactive():
 	env.render()
-	print('Make an action: Top left is 0, bottom right is 8.')
-	actions[p_id] = int(input())
-	env.step(actions[p_id])
+	print('Make an action: Top left is 0, bottom left is 2, top right is 6, bottom right is 8. PASS if it is a draw')
+	actions[p_id] = input().lower()
+	if actions[p_id] == 'pass':
+		env.step(actions[p_id])
+	else:
+		env.step(int(actions[p_id]))
 
 for episode in range(max_episodes):
 	print('episode', episode)
@@ -90,19 +124,19 @@ for episode in range(max_episodes):
 		if done[1]:
 			break
 		if agent == 'player_2':
-			randomized()
+			play()
 		if done[0]:
 			break
 		p_id = (p_id + 1) % 2
 	
-	p1.decay_epsilon(min_epsilon)
-	p2.decay_epsilon(min_epsilon)
+	p[0].decay_epsilon(min_epsilon)
+	p[1].decay_epsilon(min_epsilon)
 
 	rewards_global_0.append(episode_reward[0])
 	rewards_global_1.append(episode_reward[1])
 
-qtable_merged = p1.qtable
-qtable_merged.update(p2.qtable)
+qtable_merged = p[0].qtable
+qtable_merged.update(p[1].qtable)
 
 
 n = 1000
@@ -118,8 +152,9 @@ for rewards in rewards_per_n_episodes_1:
 	print(n, "-> ", str(sum(rewards/1000)), sep='')
 	n += 1000
 
-# for key in qtable_merged:
-# 	qtable_merged[key] = qtable_merged[key].tolist()
-	
-# with open('result.json', 'w') as fp:
-# 	json.dump(qtable_merged, fp)
+
+# tuple(map(int, test_str.split(', ')))
+
+
+dump(p[0].qtable, '1') #pid '1', '2', or 'merged'
+# dump(p[1].qtable, '2') #pid '1', '2', or 'merged'

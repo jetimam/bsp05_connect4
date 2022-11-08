@@ -2,13 +2,13 @@ import numpy as np
 import random
 
 class TicTacToeAgent:
-	def __init__(self, learning_rate, epsilon, epsilon_decay):
-		self.qtable = {}
+	def __init__(self, qtable, learning_rate, epsilon, epsilon_decay):
+		self.qtable = qtable
 		self.learning_rate = learning_rate
 		self.epsilon = epsilon
 		self.epsilon_decay = epsilon_decay
 
-	def get_best_action(self, obs, new_state_p):
+	def get_epsilon_action(self, obs, new_state_p):
 		indices = np.argwhere(obs['action_mask']==1).flatten()
 		if np.argmax(self.qtable[new_state_p][indices]) == 0 or random.random() < self.epsilon: #exploration
 			action = np.random.choice(indices)
@@ -16,6 +16,13 @@ class TicTacToeAgent:
 			p = [(self.qtable[new_state_p][i], i) for i in range(9) if i in indices]
 			p.sort()
 			action = p[-1][1]
+		return action
+
+	def get_best_action(self, obs, new_state_p):
+		indices = np.argwhere(obs['action_mask']==1).flatten()
+		p = [(self.qtable[new_state_p][i], i) for i in range(9) if i in indices]
+		p.sort()
+		action = p[-1][1]
 		return action
 
 	def get_random_action(self, obs):
