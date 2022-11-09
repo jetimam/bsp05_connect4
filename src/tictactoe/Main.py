@@ -5,6 +5,7 @@ import numpy as np
 from pettingzoo.classic import tictactoe_v3
 from TicTacToeAgent import TicTacToeAgent
 from Minimax import minimax
+import time
 
 def load(type):
 	data_o = {}
@@ -51,20 +52,14 @@ np.random.seed(57)
 static_qtable1 = load('1') #pid '1', '2', or 'merged'
 static_qtable2 = load('2')
 static_qtablemerged = load('merged')
-# minimax get_children() for tictactoe using s` DONE
-# report DONE
-# merge the tables (player2)
-	# train player2 against pre-trained player1 -> json to dump the qtable
-# interactive player DONE
-# ===================
-# bootstrap
 
-p = [TicTacToeAgent(static_qtable1, learning_rate, epsilon, epsilon_decay_rate), TicTacToeAgent(static_qtable2, learning_rate, epsilon, epsilon_decay_rate)]
-
+p = [TicTacToeAgent(learning_rate, epsilon, epsilon_decay_rate, qtable=static_qtablemerged), TicTacToeAgent(learning_rate, epsilon, epsilon_decay_rate, qtable=static_qtablemerged)]
 p_id = 0
 
 def qlearning():
 	obs, reward[p_id], done[p_id], _, _ = env.last()
+	if reward[p_id] == 1:
+		print('yay')
 	episode_reward[p_id] += reward[p_id]
 	new_state_p[p_id] = merge_states(env.observe('player_1')['observation'])
 	p[p_id].update(state_p[p_id], new_state_p[p_id], actions[p_id], reward[p_id], gamma)
@@ -76,8 +71,10 @@ def qlearning():
 	env.step(actions[p_id])
 
 def play():
-	obs, _, done[p_id], _, _ = env.last()
+	obs, reward[p_id], done[p_id], _, _ = env.last()
+	episode_reward[p_id] += reward[p_id]
 	new_state_p[p_id] = merge_states(env.observe('player_1')['observation'])
+	p[p_id].update(state_p[p_id], new_state_p[p_id], actions[p_id], reward[p_id], gamma)
 	state_p[p_id] = new_state_p[p_id]
 	if done[p_id]:
 		actions[p_id] = None
@@ -86,7 +83,8 @@ def play():
 	env.step(actions[p_id])
 
 def randomized():
-	obs, _, done[p_id], _, _ = env.last()
+	obs, reward[p_id], done[p_id], _, _ = env.last()
+	episode_reward[p_id] += reward[p_id]
 	if done[p_id]:
 		actions[p_id] = None
 	else:
@@ -119,25 +117,26 @@ for episode in range(max_episodes):
 	episode_reward = [0, 0]
 	round = 0
 	for agent in env.agent_iter(max_steps):
+		# time.sleep(1)
+		# print(reward[1])
 		if agent == 'player_1':
-			qlearning()
-		if done[1]:
-			break
-		if agent == 'player_2':
+			p_id = 0
 			play()
-		if done[0]:
-			break
-		p_id = (p_id + 1) % 2
+			if done[1]:
+				# time.sleep(4)
+				break
+		if agent == 'player_2':
+			p_id = 1
+			play()
+			if done[0]:
+				# time.sleep(4)
+				break
 	
 	p[0].decay_epsilon(min_epsilon)
 	p[1].decay_epsilon(min_epsilon)
 
 	rewards_global_0.append(episode_reward[0])
 	rewards_global_1.append(episode_reward[1])
-
-qtable_merged = p[0].qtable
-qtable_merged.update(p[1].qtable)
-
 
 n = 1000
 rewards_per_n_episodes_0 = np.split(np.array(rewards_global_0), max_episodes/n)
@@ -152,9 +151,5 @@ for rewards in rewards_per_n_episodes_1:
 	print(n, "-> ", str(sum(rewards/1000)), sep='')
 	n += 1000
 
-
-# tuple(map(int, test_str.split(', ')))
-
-
-dump(p[0].qtable, '1') #pid '1', '2', or 'merged'
+# dump(p[0].qtable, '1') #pid '1', '2', or 'merged'
 # dump(p[1].qtable, '2') #pid '1', '2', or 'merged'

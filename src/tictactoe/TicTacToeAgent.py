@@ -2,7 +2,7 @@ import numpy as np
 import random
 
 class TicTacToeAgent:
-	def __init__(self, qtable, learning_rate, epsilon, epsilon_decay):
+	def __init__(self, learning_rate, epsilon, epsilon_decay, qtable={}):
 		self.qtable = qtable
 		self.learning_rate = learning_rate
 		self.epsilon = epsilon
