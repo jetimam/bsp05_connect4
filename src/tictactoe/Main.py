@@ -53,13 +53,11 @@ static_qtable1 = load('1') #pid '1', '2', or 'merged'
 static_qtable2 = load('2')
 static_qtablemerged = load('merged')
 
-p = [TicTacToeAgent(learning_rate, epsilon, epsilon_decay_rate, qtable=static_qtablemerged), TicTacToeAgent(learning_rate, epsilon, epsilon_decay_rate, qtable=static_qtablemerged)]
+p = [TicTacToeAgent(learning_rate, epsilon, epsilon_decay_rate, qtable=static_qtable1), TicTacToeAgent(learning_rate, epsilon, epsilon_decay_rate, qtable=static_qtable2)]
 p_id = 0
 
 def qlearning():
 	obs, reward[p_id], done[p_id], _, _ = env.last()
-	if reward[p_id] == 1:
-		print('yay')
 	episode_reward[p_id] += reward[p_id]
 	new_state_p[p_id] = merge_states(env.observe('player_1')['observation'])
 	p[p_id].update(state_p[p_id], new_state_p[p_id], actions[p_id], reward[p_id], gamma)
@@ -121,13 +119,14 @@ for episode in range(max_episodes):
 		# print(reward[1])
 		if agent == 'player_1':
 			p_id = 0
-			play()
+			randomized()
 			if done[1]:
 				# time.sleep(4)
 				break
 		if agent == 'player_2':
 			p_id = 1
-			play()
+			print(actions[0])
+			minimaxed()
 			if done[0]:
 				# time.sleep(4)
 				break

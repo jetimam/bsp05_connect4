@@ -9,6 +9,7 @@ def minimax(obs, qtable, pid, node, depth, isMaxP, alpha, beta):
 		if isMaxP:
 			best = sys.maxsize
 			for child in get_children(node, pid):
+				pid = (pid + 1) % 2
 				current = search(obs, qtable, pid, child, depth+1, False, alpha, beta)
 				best = max(current, best)
 				alpha = max(alpha, best)
@@ -18,6 +19,7 @@ def minimax(obs, qtable, pid, node, depth, isMaxP, alpha, beta):
 		else:
 			best = -sys.maxsize - 1
 			for child in get_children(node, pid):
+				pid = (pid + 1) % 2
 				current = search(obs, qtable, pid, child, depth+1, True, alpha, beta)
 				best = min(current, best)
 				beta = min(best, beta)
@@ -33,12 +35,11 @@ def minimax(obs, qtable, pid, node, depth, isMaxP, alpha, beta):
 				if node_p[i][j] == 0:
 					temp = deepcopy(node_p)
 					temp[i][j] = (pid+1)
-					temp = tuple(map(tuple, node))
+					temp = tuple(map(tuple, temp))
 					children.append(temp)
 		return children
 
 	def heuristic(qtable, node, obs):
-		print('heur')
 		indices = np.argwhere(obs['action_mask']==1).flatten()
 		p = [(qtable[node][i], i) for i in range(9) if i in indices]
 		p.sort()
