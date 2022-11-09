@@ -7,6 +7,9 @@ from TicTacToeAgent import TicTacToeAgent
 from Minimax import minimax
 import time
 
+# dqn
+# cleanrl repo
+
 def load(type):
 	data_o = {}
 	with open('table'+type+'.json', 'r') as fp:
@@ -36,26 +39,6 @@ def merge_states(obs):
 
 	return tuple(map(tuple, state_p))
 
-max_episodes = 10000
-max_steps = 100
-learning_rate = 0.1
-gamma = 0.99 #discount rate
-epsilon = 0.99
-max_epsilon = 1
-min_epsilon = 0.01
-epsilon_decay_rate = 0.0002
-rewards_global_0 = []
-rewards_global_1 = []
-env = tictactoe_v3.env()
-env.reset()
-np.random.seed(57)
-static_qtable1 = load('1') #pid '1', '2', or 'merged'
-static_qtable2 = load('2')
-static_qtablemerged = load('merged')
-
-p = [TicTacToeAgent(learning_rate, epsilon, epsilon_decay_rate, qtable=static_qtable1), TicTacToeAgent(learning_rate, epsilon, epsilon_decay_rate, qtable=static_qtable2)]
-p_id = 0
-
 def qlearning():
 	obs, reward[p_id], done[p_id], _, _ = env.last()
 	episode_reward[p_id] += reward[p_id]
@@ -65,7 +48,7 @@ def qlearning():
 	if done[p_id]:
 		actions[p_id] = None
 	else:
-		actions[p_id] = p[p_id].get_epsilon_action(obs, new_state_p[p_id])
+		actions[p_id] = p[p_id].get_random_action(obs, new_state_p[p_id])
 	env.step(actions[p_id])
 
 def play():
@@ -91,8 +74,8 @@ def randomized():
 
 def minimaxed():
 	obs, _, done[p_id], _, _ = env.last()
-	mini_state_p = merge_states(env.observe('player_1')['observation'])
-	actions[p_id] = minimax(obs, p[p_id].qtable, p_id, mini_state_p, 0, True, sys.maxsize, -sys.maxsize - 1)
+	minimax_state_p = merge_states(env.observe('player_1')['observation'])
+	actions[p_id] = minimax(obs, p[p_id].qtable, p_id, minimax_state_p, 0, True, sys.maxsize, -sys.maxsize - 1)
 	env.step(actions[p_id])
 
 def interactive():
@@ -104,6 +87,26 @@ def interactive():
 	else:
 		env.step(int(actions[p_id]))
 
+max_episodes = 10000
+max_steps = 100
+learning_rate = 0.1
+gamma = 0.99 #discount rate
+epsilon = 0.99
+max_epsilon = 1
+min_epsilon = 0.01
+epsilon_decay_rate = 0.0001
+rewards_global_0 = []
+rewards_global_1 = []
+env = tictactoe_v3.env()
+env.reset()
+np.random.seed(57)
+static_qtable1 = load('1') #pid '1', '2', or 'merged'
+static_qtable2 = load('2')
+static_qtablemerged = load('merged')
+
+p = [TicTacToeAgent(learning_rate, epsilon, epsilon_decay_rate, qtable=static_qtable1), TicTacToeAgent(learning_rate, epsilon, epsilon_decay_rate, qtable=static_qtable2)]
+p_id = 0
+
 for episode in range(max_episodes):
 	print('episode', episode)
 	env.reset()
@@ -114,19 +117,19 @@ for episode in range(max_episodes):
 	done = [False, False]
 	episode_reward = [0, 0]
 	round = 0
+	
 	for agent in env.agent_iter(max_steps):
 		# time.sleep(1)
 		# print(reward[1])
 		if agent == 'player_1':
 			p_id = 0
-			randomized()
+			play()
 			if done[1]:
 				# time.sleep(4)
 				break
 		if agent == 'player_2':
 			p_id = 1
-			print(actions[0])
-			minimaxed()
+			qlearning()
 			if done[0]:
 				# time.sleep(4)
 				break
@@ -150,5 +153,5 @@ for rewards in rewards_per_n_episodes_1:
 	print(n, "-> ", str(sum(rewards/1000)), sep='')
 	n += 1000
 
-# dump(p[0].qtable, '1') #pid '1', '2', or 'merged'
-# dump(p[1].qtable, '2') #pid '1', '2', or 'merged'
+dump(p[0].qtable, '1') #pid '1', '2', or 'merged'
+dump(p[1].qtable, '2') #pid '1', '2', or 'merged'

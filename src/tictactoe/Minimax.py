@@ -40,10 +40,13 @@ def minimax(obs, qtable, pid, node, depth, isMaxP, alpha, beta):
 		return children
 
 	def heuristic(qtable, node, obs):
-		indices = np.argwhere(obs['action_mask']==1).flatten()
-		p = [(qtable[node][i], i) for i in range(9) if i in indices]
-		p.sort()
-		action = p[-1][1]
-		return qtable[node][action]
+		if node in qtable:
+			indices = np.argwhere(obs['action_mask']==1).flatten()
+			p = [(qtable[node][i], i) for i in range(9) if i in indices]
+			p.sort()
+			action = p[-1][1]
+			return qtable[node][action]
+		else: #default value in case node hasnt been explored yet.
+			return 0
 
 	return search(obs, qtable, pid, node, depth, isMaxP, alpha, beta)
