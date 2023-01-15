@@ -1,52 +1,78 @@
-import sys
 from copy import deepcopy
 import numpy as np
 
-def minimax(obs, qtable, pid, node, depth, isMaxP, alpha, beta):
-	def search(obs, qtable, pid, node, depth, isMaxP, alpha, beta):
-		if len(get_children(node, pid)) == 0 or depth == 3:
-			return heuristic(qtable, node, obs)
+class Minimax():
+	def __init__(self):
+		pass
+	def search(self, obs, qtable, node, depth, isMaxP, alpha, beta):
+		if len(self.get_children(node, depth)) == 0 or depth == 2:
+			return self.heuristic(qtable, node, obs, depth)
 		if isMaxP:
-			best = sys.maxsize
-			for child in get_children(node, pid):
-				pid = (pid + 1) % 2
-				current = search(obs, qtable, pid, child, depth+1, False, alpha, beta)
-				best = max(current, best)
-				alpha = max(alpha, best)
-				if alpha > beta:
-					break
+			best = [0, -1] # (action, value)
+			children = self.get_children(node, depth)
+			counter = 0
+			for child in children: # (state, action to get to the state)
+				current = self.search(obs, qtable, child[0], depth+1, False, alpha, beta) # value
+				if current is None: continue
+				if current[1] > best[1]:
+					best[0] = counter
+					best[1] = current[1]
+				if best[1] >= beta: break
+				if best[1] > alpha: alpha = best[1]
+				counter += 1
+			# print('depth: ' + str(depth) + 'best: ' + str(best))
 			return best
 		else:
-			best = -sys.maxsize - 1
-			for child in get_children(node, pid):
-				pid = (pid + 1) % 2
-				current = search(obs, qtable, pid, child, depth+1, True, alpha, beta)
-				best = min(current, best)
-				beta = min(best, beta)
-				if alpha > beta:
-					break
+			best = [0, 1] # (action, value)
+			children = self.get_children(node, depth)
+			counter = 0
+			for child in children:
+				current = self.search(obs, qtable, child[0], depth+1, True, alpha, beta)
+				if current is None: continue
+				if current[1] < best[1]:
+					best[0] = counter
+					best[1] = current[1]
+				if best[1] <= alpha: break
+				if best[1] < beta: beta = best[1]
+				counter += 1
+			# print('depth: ' + str(depth) + 'best: ' + str(best))
 			return best
 
-	def get_children(node, pid):
+	def get_children(self, node, depth):
+		depth = depth+1
+		pid = 1
+		if depth % 2 == 1: pid = 2
 		node_p = list(map(list, node))
 		children = []
+		counter = 0
 		for i in range(len(node_p)):
 			for j in range(len(node_p)):
 				if node_p[i][j] == 0:
-					temp = deepcopy(node_p)
-					temp[i][j] = (pid+1)
-					temp = tuple(map(tuple, temp))
-					children.append(temp)
-		return children
+					new_child = deepcopy(node_p)
+					new_child[i][j] = (pid)
+					new_child = tuple(map(tuple, new_child))
+					children.append((new_child, counter))
+					counter += 1
+		return children # list(tuple(state, action))
 
-	def heuristic(qtable, node, obs):
-		if node in qtable:
-			indices = np.argwhere(obs['action_mask']==1).flatten()
-			p = [(qtable[node][i], i) for i in range(9) if i in indices]
-			p.sort()
-			action = p[-1][1]
-			return qtable[node][action]
-		else: #default value in case node hasnt been explored yet.
-			return 0
+	def sort_children():
+		pass
 
-	return search(obs, qtable, pid, node, depth, isMaxP, alpha, beta)
+	def heuristic(self, qtable, node, obs, depth): # h gets passed up, but not action. action needs to be relative action, not absolute action
+		if node not in qtable:
+			return None
+		indices = []
+		counter = 0
+		for i in range(3):
+			for j in range(3):
+				if node[i][j] == 0:
+					indices.append(counter)
+				counter += 1
+		p = [(qtable[node][i], i) for i in range(9) if i in indices]
+		p.sort()
+		h = p[-1][0]
+		if h == 0.0:
+			return None
+		if depth%2 == 1: h = -h
+		a = p[-1][1]
+		return [a, h]

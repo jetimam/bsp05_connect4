@@ -10,7 +10,7 @@ class TicTacToeAgent:
 
 	def get_epsilon_action(self, obs, new_state_p):
 		indices = np.argwhere(obs['action_mask']==1).flatten()
-		if np.argmax(self.qtable[new_state_p][indices]) == 0 or random.random() < self.epsilon: #exploration
+		if np.max(self.qtable[new_state_p][indices]) == 0 or random.random() < self.epsilon: #exploration
 			action = np.random.choice(indices)
 		else: #exploitation
 			p = [(self.qtable[new_state_p][i], i) for i in range(9) if i in indices]
